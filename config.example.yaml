@@ -1,0 +1,13 @@
+token: 12345abc
+loglevel: 2
+basepath: /share/git-mirror
+added:
+  'brimstone/': ./build
+  '': ./notify
+
+changed:
+  'brimstone/': ./build
+  'syncthing/syncthing': ./update-syncthing
+
+removed:
+  '': ./notify
