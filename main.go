@@ -35,12 +35,12 @@ type HashRefsDiff map[plumbing.ReferenceName]ChangeType
 
 var basePath = ""
 
-func openRepo(repoName string) (repo *git.Repository, err error) {
+func openRepo(logger *log.Logger, repoName string) (repo *git.Repository, err error) {
 	repo, err = git.PlainOpen(basePath + "/" + repoName)
 	if err == nil {
 		return
 	}
-	defer profile(2, time.Now(), " Cloned %s", repoName)
+	defer profile(logger, 2, time.Now(), " Cloned %s", repoName)
 	opt := &git.CloneOptions{
 		URL:        "https://github.com/" + repoName,
 		NoCheckout: true,
@@ -59,7 +59,7 @@ func openRepo(repoName string) (repo *git.Repository, err error) {
 	match := findMatch(repoName, viper.GetStringMapString("added"))
 	err = executeCmd(repoName, plumbing.ReferenceName(""), match)
 	if err != nil {
-		logit(0, "Error running command %s, %s\n", match, err)
+		logit(logger, 0, "Error running command %s, %s\n", match, err)
 	}
 
 	return
@@ -117,7 +117,7 @@ func diffHashRefs(before HashRefs, after HashRefs) (d HashRefsDiff, err error) {
 	return
 }
 
-func errExit(err error, msg string) {
+func errExit(logger *log.Logger, err error, msg string) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, msg, err)
 		os.Exit(1)
@@ -125,38 +125,43 @@ func errExit(err error, msg string) {
 }
 
 func updateRepo(repoName string) {
-	logit(2, "Starting %s\n", repoName)
-	repo, err := openRepo(repoName)
+	logger := log.New(os.Stderr, "["+repoName+"] ", log.LstdFlags)
+	logit(logger, 2, "Starting %s\n", repoName)
+	repo, err := openRepo(logger, repoName)
 	if err != nil {
-		log.Printf("Error opening repo: %s\n", err)
+		logger.Printf("Error opening repo: %s\n", err)
 		return
 	}
 
 	before, err := getHashRefs(repo)
-	errExit(err, "Error getting ref hashes: %s\n")
+	errExit(logger, err, "Error getting ref hashes: %s\n")
 	err = fetchRemotes(repo)
 	if err != nil {
-		log.Printf("Error fetching repo: %s\n", err)
+		// Hide empty repo errors
+		if err.Error() == "remote repository is empty" {
+			logit(logger, 1, "Error fetching repo: %s\n", err)
+			return
+		}
+		logit(logger, 0, "Error fetching repo: %s\n", err)
 		return
 	}
 	after, err := getHashRefs(repo)
-	errExit(err, "Error getting ref hashes: %s\n")
+	errExit(logger, err, "Error getting ref hashes: %s\n")
 
 	d, err := diffHashRefs(before, after)
-	errExit(err, "Error getting differences of hashrefs: %s\n")
-	//log.Printf("Diff: %#v\n", d)
+	errExit(logger, err, "Error getting differences of hashrefs: %s\n")
 
 	for k, v := range d {
 		match := ""
 		switch v {
 		case Changed:
-			logit(1, "%s Ref %s changed\n", repoName, k)
+			logit(logger, 1, "%s Ref %s changed\n", repoName, k)
 			match = findMatch(repoName, viper.GetStringMapString("changed"))
 		case Added:
-			logit(1, "%s Ref %s added\n", repoName, k)
+			logit(logger, 1, "%s Ref %s added\n", repoName, k)
 			match = findMatch(repoName, viper.GetStringMapString("added"))
 		case Removed:
-			logit(1, "%s Ref %s removed\n", repoName, k)
+			logit(logger, 1, "%s Ref %s removed\n", repoName, k)
 			match = findMatch(repoName, viper.GetStringMapString("removed"))
 		}
 		if match == "" {
@@ -164,7 +169,7 @@ func updateRepo(repoName string) {
 		}
 		err := executeCmd(repoName, k, match)
 		if err != nil {
-			logit(0, "Error running command %s, %s\n", match, err)
+			logit(logger, 0, "Error running command %s, %s\n", match, err)
 		}
 	}
 }
@@ -182,11 +187,11 @@ func executeCmd(repoName string, branchName plumbing.ReferenceName, command stri
 	return
 }
 
-func profile(level int, start time.Time, format string, args ...interface{}) {
+func profile(logger *log.Logger, level int, start time.Time, format string, args ...interface{}) {
 	var b []interface{}
 	b = append(b, time.Now().Sub(start))
 	b = append(b, args...)
-	logit(level, "Duration: %s"+format+"\n", b...)
+	logit(logger, level, "Duration: %s"+format+"\n", b...)
 }
 
 func getSelfRepos(client *github.Client) (allRepos []string, err error) {
@@ -235,9 +240,9 @@ func getStarredRepos(client *github.Client) (allRepos []string, err error) {
 	return
 }
 
-func logit(level int, format string, args ...interface{}) {
+func logit(logger *log.Logger, level int, format string, args ...interface{}) {
 	if viper.GetInt("loglevel") >= level {
-		log.Printf(format, args...)
+		logger.Printf(format, args...)
 	}
 }
 
@@ -263,12 +268,13 @@ func main() {
 	viper.AddConfigPath("$HOME/.github-mirror")
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
+	logger := log.New(os.Stderr, "[main] ", log.LstdFlags)
 	if err != nil {
-		logit(0, "Error reading config: %s\n", err)
+		logit(logger, 0, "Error reading config: %s\n", err)
 	}
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) {
-		logit(2, "Config file changed:", e.Name)
+		logit(logger, 2, "Config file changed:", e.Name)
 	})
 	viper.AutomaticEnv()
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
@@ -287,24 +293,24 @@ func main() {
 	)
 	tc := oauth2.NewClient(context.Background(), ts)
 	client := github.NewClient(tc)
-	defer profile(1, time.Now(), "")
+	defer profile(logger, 1, time.Now(), "")
 
-	logit(2, "Getting self repos\n")
+	logit(logger, 2, "Getting self repos\n")
 	repoMap := make(map[string]bool)
 	selfRepos, err := getSelfRepos(client)
-	errExit(err, "Unable to get public repos: %s\n")
+	errExit(logger, err, "Unable to get public repos: %s\n")
 	for _, repo := range selfRepos {
 		repoMap[repo] = true
 	}
 
-	logit(2, "Getting starred repos\n")
+	logit(logger, 2, "Getting starred repos\n")
 	starredRepos, err := getStarredRepos(client)
-	errExit(err, "Unable to get starred repos: %s\n")
+	errExit(logger, err, "Unable to get starred repos: %s\n")
 	for _, repo := range starredRepos {
 		repoMap[repo] = true
 	}
 
-	logit(2, "Self Repos: %d, Starred Repos: %d", len(selfRepos), len(starredRepos))
+	logit(logger, 2, "Self Repos: %d, Starred Repos: %d", len(selfRepos), len(starredRepos))
 
 	repoChan := make(chan string)
 	var wg sync.WaitGroup
@@ -322,10 +328,10 @@ func main() {
 		}()
 	}
 	for repo := range repoMap {
-		logit(2, "Adding %s\n", repo)
+		logit(logger, 2, "Adding %s\n", repo)
 		repoChan <- repo
 	}
 	close(repoChan)
-	logit(2, "Waiting for everything to finish\n")
+	logit(logger, 2, "Waiting for everything to finish\n")
 	wg.Wait()
 }
