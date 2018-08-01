@@ -81,7 +81,7 @@ func fetchRemotes(repo *git.Repository) (err error) {
 	for _, remote := range remotes {
 		opt := &git.FetchOptions{
 			Auth: &http.BasicAuth{
-				Username: "brimstone",
+				Username: viper.GetString("username"),
 				Password: viper.GetString("token"),
 			},
 		}
