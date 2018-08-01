@@ -300,6 +300,7 @@ func main() {
 	selfRepos, err := getSelfRepos(client)
 	errExit(logger, err, "Unable to get public repos: %s\n")
 	for _, repo := range selfRepos {
+		logit(logger, 3, "Repo: %s\n", repo)
 		repoMap[repo] = true
 	}
 
