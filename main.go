@@ -84,6 +84,7 @@ func fetchRemotes(repo *git.Repository) (err error) {
 				Username: viper.GetString("username"),
 				Password: viper.GetString("token"),
 			},
+			Tags: git.AllTags,
 		}
 		if viper.GetInt("loglevel") >= 2 {
 			opt.Progress = os.Stdout
@@ -129,6 +130,9 @@ func updateRepo(repoName string) {
 	logit(logger, 2, "Starting %s\n", repoName)
 	repo, err := openRepo(logger, repoName)
 	if err != nil {
+		if err.Error() == "remote repository is empty" {
+			return
+		}
 		logger.Printf("Error opening repo: %s\n", err)
 		return
 	}
@@ -229,6 +233,10 @@ func getStarredRepos(client *github.Client) (allRepos []string, err error) {
 			return
 		}
 		for _, repo := range repos {
+			if repo.Repository.Owner == nil {
+				//fmt.Println("Owner is nil: " + *repo.Repository.URL)
+				continue
+			}
 			allRepos = append(allRepos, *repo.Repository.Owner.Login+"/"+*repo.Repository.Name)
 		}
 		if resp.NextPage == 0 {
