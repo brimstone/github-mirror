@@ -12,6 +12,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
-	golang.org/x/oauth2 v0.15.0
+	golang.org/x/oauth2 v0.16.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 )
