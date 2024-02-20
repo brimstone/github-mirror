@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/github"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
-	git "gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
 type HashRefs map[plumbing.ReferenceName]plumbing.Hash
