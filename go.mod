@@ -3,6 +3,7 @@ module github.com/brimstone/github-mirror
 go 1.13
 
 require (
+	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/google/go-github v17.0.0+incompatible
