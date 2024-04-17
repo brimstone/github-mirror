@@ -1,2 +1,3 @@
 #!/bin/bash
+set -ueo pipefail
 echo "${RELEASE_KEY}" > release.pem
