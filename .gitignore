@@ -1,2 +1,4 @@
 *.swp
 github-mirror
+/dist
+/release.pem

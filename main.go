@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
+	"github.com/brimstone/github-mirror/pkg/version"
 	"github.com/fsnotify/fsnotify"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -291,6 +293,24 @@ func main() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)
+
+	// Figure out the current version
+	v := semver.MustParse(version.Version)
+	pubkey, err := version.PublicKey()
+	if err != nil {
+		return err
+	}
+	// Check for updates
+
+	latest, found, err := selfupdate.DetectLatest("brimstone/github-mirror")
+	if err != nil {
+		logit(logger, 0, "Error occurred while detecting version:", err)
+	}
+
+	v := semver.MustParse(version.Version)
+	if found && latest.Version.GT(v) {
+		logit(logger, 0, "New version available")
+	}
 
 	if viper.GetString("token") == "" {
 		fmt.Fprintf(os.Stderr, "Token must be set")

@@ -1,0 +1,40 @@
+project_name: github-mirror
+env:
+- GO111MODULE=on
+before:
+  hooks:
+  - go mod tidy
+builds:
+- id: github-mirror
+  binary: github-mirror
+  ldflags:
+  - -s -w
+  - -X github.com/brimstone/github-mirror/pkg/version.Version={{.Version}}
+  env:
+  - CGO_ENABLED=0
+  goarm:
+  - "6"
+  goarch:
+  - 386
+  - amd64
+  - arm
+  - arm64
+  goos:
+  - linux
+  - darwin
+  - windows
+  ignore:
+  - goos: darwin
+    goarch: 386
+archives:
+- id: github-mirror
+  name_template: '{{ .Binary }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  builds:
+  - github-mirror
+  format: zip
+release:
+  prerelease: auto
+signs:
+- artifacts: all
+  cmd: openssl
+  args: ["dgst", "-sha256", "-sign", "release.pem", "-out", "${signature}", "${artifact}"]
