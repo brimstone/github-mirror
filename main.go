@@ -11,13 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Masterminds/semver/v3"
+	"github.com/blang/semver"
 	"github.com/brimstone/github-mirror/pkg/version"
 	"github.com/fsnotify/fsnotify"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/github"
+	"github.com/rhysd/go-github-selfupdate/selfupdate"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
@@ -296,10 +297,12 @@ func main() {
 
 	// Figure out the current version
 	v := semver.MustParse(version.Version)
+	/* TODO Need this to enable self-updates
 	pubkey, err := version.PublicKey()
 	if err != nil {
 		return err
 	}
+	*/
 	// Check for updates
 
 	latest, found, err := selfupdate.DetectLatest("brimstone/github-mirror")
@@ -307,7 +310,6 @@ func main() {
 		logit(logger, 0, "Error occurred while detecting version:", err)
 	}
 
-	v := semver.MustParse(version.Version)
 	if found && latest.Version.GT(v) {
 		logit(logger, 0, "New version available")
 	}
