@@ -146,6 +146,9 @@ func updateRepo(repoName string) {
 			logit(logger, 1, "Error fetching repo: %s\n", err)
 			return
 		}
+		if err.Error() == "reference has changed concurrently" { // TODO: try a few times and don't just ignore this
+			return
+		}
 		logit(logger, 0, "Error fetching repo: %s\n", err)
 		return
 	}
