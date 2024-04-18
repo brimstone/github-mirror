@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/blang/semver"
@@ -273,8 +274,9 @@ func findMatch(needle string, haystack map[string]string) (result string) {
 func main() {
 
 	flag.String("token", "", "github token")
-	flag.Int("loglevel", 1, "Log level, 0 is silent, 3 is verbose")
+	flag.Int("loglevel", 1, "log level, 0 is silent, 3 is verbose")
 	flag.Int("workers", 5, "number of workers")
+	flag.Bool("auto-upgrade", false, "automatically upgrade if a new version is available")
 
 	// setup configs
 	viper.SetConfigName("config")
@@ -297,21 +299,46 @@ func main() {
 
 	// Figure out the current version
 	v := semver.MustParse(version.Version)
-	/* TODO Need this to enable self-updates
-	pubkey, err := version.PublicKey()
-	if err != nil {
-		return err
-	}
-	*/
-	// Check for updates
+	if viper.GetBool("auto-upgrade") {
+		// Check for updates
+		pubkey, err := version.PublicKey()
+		if err != nil {
+			logit(logger, 0, "Error occurred while extracting public key:", err)
+			return
+		}
+		up, err := selfupdate.NewUpdater(selfupdate.Config{
+			Validator: &selfupdate.ECDSAValidator{
+				PublicKey: pubkey,
+			},
+			Filters: []string{
+				version.Binary,
+			},
+		})
+		latest, err := up.UpdateSelf(v, "brimstone/github-mirror")
+		if err != nil {
+			logit(logger, 0, "Binary update failed:", err)
+			return
+		}
+		if latest.Version.Equals(v) {
+			// latest version is the same as current version. It means current binary is up to date.
+			logit(logger, 0, "Current binary is the latest version", v)
+		} else {
+			logit(logger, 1, fmt.Sprintf("Successfully updated to version %s", latest.Version))
+			me, _ := os.Executable()
+			syscall.Exec(me, os.Args, os.Environ())
+		}
 
-	latest, found, err := selfupdate.DetectLatest("brimstone/github-mirror")
-	if err != nil {
-		logit(logger, 0, "Error occurred while detecting version:", err)
-	}
+	} else {
+		// Check for updates
 
-	if found && latest.Version.GT(v) {
-		logit(logger, 0, "New version available")
+		latest, found, err := selfupdate.DetectLatest("brimstone/github-mirror")
+		if err != nil {
+			logit(logger, 0, "Error occurred while detecting version:", err)
+		}
+
+		if found && latest.Version.GT(v) {
+			logit(logger, 0, "New version available")
+		}
 	}
 
 	if viper.GetString("token") == "" {
