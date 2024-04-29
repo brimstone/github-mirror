@@ -286,11 +286,11 @@ func main() {
 	err := viper.ReadInConfig()
 	logger := log.New(os.Stderr, "[main] ", log.LstdFlags)
 	if err != nil {
-		logit(logger, 0, "Error reading config: %s\n", err)
+		logit(logger, 0, "Error reading config: %s", err)
 	}
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) {
-		logit(logger, 2, "Config file changed:", e.Name)
+		logit(logger, 2, "Config file changed: %s", e.Name)
 	})
 	viper.AutomaticEnv()
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
@@ -303,7 +303,7 @@ func main() {
 		// Check for updates
 		pubkey, err := version.PublicKey()
 		if err != nil {
-			logit(logger, 0, "Error occurred while extracting public key:", err)
+			logit(logger, 0, "Error occurred while extracting public key: %s", err)
 			return
 		}
 		up, err := selfupdate.NewUpdater(selfupdate.Config{
@@ -316,12 +316,12 @@ func main() {
 		})
 		latest, err := up.UpdateSelf(v, "brimstone/github-mirror")
 		if err != nil {
-			logit(logger, 0, "Binary update failed:", err)
+			logit(logger, 0, "Binary update failed: %s", err)
 			return
 		}
 		if latest.Version.Equals(v) {
 			// latest version is the same as current version. It means current binary is up to date.
-			logit(logger, 0, "Current binary is the latest version", v)
+			logit(logger, 1, "Current binary is the latest version %s", v)
 		} else {
 			logit(logger, 1, fmt.Sprintf("Successfully updated to version %s", latest.Version))
 			me, _ := os.Executable()
@@ -333,7 +333,7 @@ func main() {
 
 		latest, found, err := selfupdate.DetectLatest("brimstone/github-mirror")
 		if err != nil {
-			logit(logger, 0, "Error occurred while detecting version:", err)
+			logit(logger, 0, "Error occurred while detecting version: %s", err)
 		}
 
 		if found && latest.Version.GT(v) {
