@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/rhysd/go-github-selfupdate v1.2.3
