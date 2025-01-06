@@ -10,7 +10,7 @@ require (
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/oauth2 v0.25.0
 )
 
 require (
