@@ -8,7 +8,7 @@ require (
 	github.com/go-git/go-git/v5 v5.13.2
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/rhysd/go-github-selfupdate v1.2.3
-	github.com/spf13/pflag v1.0.5
+	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.19.0
 	golang.org/x/oauth2 v0.25.0
 )
