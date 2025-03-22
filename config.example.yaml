@@ -11,3 +11,6 @@ changed:
 
 removed:
   '': ./notify
+
+ignore:
+- org/repo

@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -69,9 +70,14 @@ func openRepo(logger *log.Logger, repoName string) (repo *git.Repository, err er
 	return
 }
 
-func getHashRefs(repo *git.Repository) (m HashRefs, err error) {
+func getHashRefs(logger *log.Logger, repo *git.Repository) (m HashRefs, err error) {
 	m = make(HashRefs)
-	refs, _ := repo.References()
+	refs, err := repo.References()
+	if err != nil {
+		logit(logger, 2, "Delaying before trying to get refs again")
+		time.Sleep(time.Second)
+		return getHashRefs(logger, repo)
+	}
 	refs.ForEach(func(ref *plumbing.Reference) error {
 		m[ref.Name()] = ref.Hash()
 		return nil
@@ -141,7 +147,7 @@ func updateRepo(repoName string) {
 		return
 	}
 
-	before, err := getHashRefs(repo)
+	before, err := getHashRefs(logger, repo)
 	errExit(logger, err, "Error getting ref hashes: %s\n")
 	err = fetchRemotes(repo)
 	if err != nil {
@@ -156,7 +162,7 @@ func updateRepo(repoName string) {
 		logit(logger, 0, "Error fetching repo: %s\n", err)
 		return
 	}
-	after, err := getHashRefs(repo)
+	after, err := getHashRefs(logger, repo)
 	errExit(logger, err, "Error getting ref hashes: %s\n")
 
 	d, err := diffHashRefs(before, after)
@@ -375,6 +381,7 @@ func main() {
 
 	repoChan := make(chan string)
 	var wg sync.WaitGroup
+	ignore := viper.GetStringSlice("ignore")
 	for i := 0; i < viper.GetInt("workers"); i++ {
 		go func() {
 			wg.Add(1)
@@ -383,6 +390,10 @@ func main() {
 				repo, ok := <-repoChan
 				if !ok {
 					break
+				}
+				if slices.Contains(ignore, repo) {
+					logit(logger, 2, "Ignoring repo: %s", repo)
+					continue
 				}
 				updateRepo(repo)
 			}
