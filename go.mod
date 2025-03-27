@@ -11,7 +11,7 @@ require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/pflag v1.0.6
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	golang.org/x/oauth2 v0.28.0
 )
 
