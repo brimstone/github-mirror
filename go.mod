@@ -1,6 +1,6 @@
 module github.com/brimstone/github-mirror
 
-go 1.24
+go 1.24.0
 
 toolchain go1.24.1
 
@@ -12,7 +12,7 @@ require (
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
-	golang.org/x/oauth2 v0.30.0
+	golang.org/x/oauth2 v0.31.0
 )
 
 require (
